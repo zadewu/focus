@@ -1,0 +1,6 @@
+# Ignore claude default
+.claude/*
+!.claude/rules/
+
+/idea
+/plans
