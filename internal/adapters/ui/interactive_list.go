@@ -19,17 +19,12 @@ func (i focusItem) Title() string {
 		return CurrentMark.Render("▶") + " " + ActiveStyle.Render(name)
 	}
 	if i.focus.Archived {
-		return ArchivedStyle.Render(name)
+		return ArchivedStyle.Render(name) + DimStyle.Render("  archived")
 	}
 	return name
 }
 
-func (i focusItem) Description() string {
-	if i.focus.Archived {
-		return DimStyle.Render("archived")
-	}
-	return ""
-}
+func (i focusItem) Description() string { return "" }
 
 func (i focusItem) FilterValue() string { return i.focus.Name }
 
@@ -84,7 +79,9 @@ func RunInteractiveList(focuses []domain.Focus, current string) (string, error) 
 		items[i] = focusItem{focus: f, current: f.Name == current}
 	}
 
-	l := list.New(items, list.NewDefaultDelegate(), 0, 0)
+	delegate := list.NewDefaultDelegate()
+	delegate.ShowDescription = false
+	l := list.New(items, delegate, 0, 0)
 	l.Title = "focus sessions  (/ filter · Enter switch · q quit)"
 	l.Styles.Title = HeaderStyle
 
