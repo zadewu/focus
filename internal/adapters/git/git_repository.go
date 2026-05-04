@@ -97,21 +97,13 @@ func (r *Repository) firstCommitTime(branch string) time.Time {
 }
 
 func (r *Repository) Create(name string) error {
-	// If no branches exist yet, use --orphan to avoid needing a parent commit.
-	out, _ := r.run("branch", "--format=%(refname:short)")
-	hasBranches := strings.TrimSpace(out) != ""
-
-	if !hasBranches {
-		if _, err := r.run("checkout", "--orphan", name); err != nil {
-			return fmt.Errorf("create focus %q: %w", name, err)
-		}
-		if _, err := r.run("commit", "--allow-empty", "-m", "init"); err != nil {
-			return fmt.Errorf("create focus %q: initial commit: %w", name, err)
-		}
-	} else {
-		if _, err := r.run("checkout", "-b", name); err != nil {
-			return fmt.Errorf("create focus %q: %w", name, err)
-		}
+	// Always use --orphan so each focus starts with independent history,
+	// preventing notes from earlier focuses leaking into new ones via git log.
+	if _, err := r.run("checkout", "--orphan", name); err != nil {
+		return fmt.Errorf("create focus %q: %w", name, err)
+	}
+	if _, err := r.run("commit", "--allow-empty", "-m", "init"); err != nil {
+		return fmt.Errorf("create focus %q: initial commit: %w", name, err)
 	}
 	return nil
 }
