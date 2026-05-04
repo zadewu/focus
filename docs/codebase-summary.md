@@ -4,7 +4,7 @@
 **Architecture:** Hexagonal (ports & adapters)  
 **Language:** Go 1.22+  
 **Module:** `github.com/zadewu/focus`  
-**Last updated:** 2026-05-03
+**Last updated:** 2026-05-04
 
 ---
 
@@ -31,6 +31,7 @@ focus/
 │   ├── remote.go                              # focus remote [url]
 │   ├── push.go                                # focus push
 │   ├── pull.go                                # focus pull [--restore]
+│   ├── search.go                              # focus search <keyword>
 │   └── shell_init.go                          # focus shell-init
 │
 └── internal/
@@ -58,9 +59,10 @@ focus/
 ## Domain Layer (`internal/domain/`)
 
 ### `focus.go` — Entities
-- `Focus` struct: `Name`, `CreatedAt`, `IsArchived`
+- `Focus` struct: `Name`, `CreatedAt`, `Archived`
 - `Note` struct: `Timestamp`, `Message`
-- `validateName()` — business rule: no spaces/slashes, not starting with `archive`
+- `SearchResult` struct: `Focus`, `Note` — pairs a note with its session context
+- `ValidateName()` — business rule: no spaces/slashes, not starting with `archive`
 
 ### `ports.go` — Port Interfaces
 ```go
@@ -107,6 +109,7 @@ Accepts port interfaces via constructor injection:
 - `ArchiveFocus(name)` — repo.Archive
 - `ListFocuses()` — repo.List
 - `GetNotes(name)` — repo.GetNotes
+- `SearchNotes(keyword)` — filter notes across all sessions using rg → grep → Go fallback
 - `Export(name, exporter)` — collect notes + files, call exporter
 - `RemoteGet()` — get configured origin URL
 - `RemoteSet(url)` — set origin URL
@@ -162,12 +165,14 @@ service   := domain.NewFocusService(repo, cfg, ws)
 ## Implementation Status
 
 All source files implemented and tested:
-- **cmd/**: 14 command handlers (new, switch, list, archive, note, log, workspace, config, export, import, shell-init, remote, push, pull)
+- **cmd/**: 15 command handlers (new, switch, list, archive, note, log, workspace, config, export, import, search, shell-init, remote, push, pull)
 - **domain/**: focus.go, service.go, ports.go fully implemented
+  - `SearchResult` struct, `SearchNotes()` method — cross-session search with pluggable backends
   - `isCurrentPrefixed()` — detect canonical YYYY-MM-DD-HHmm__ prefix
   - `ParseImportName()` — convert legacy names to canonical format
   - `ImportFocuses()` — two-pass migration (branches, then workspace dirs)
 - **adapters/**: git, config, workspace, export (markdown + obsidian), and ui all functional
   - `CreateBranch()`, `RenameBranch()` added to git adapter
+  - `PrintSearchResults()` in ui — renders search matches with focus/note context
 - **Tests**: Comprehensive unit test coverage for domain logic + remote operations + import migration
 - **Deployment**: Ready for `go install github.com/zadewu/focus@latest`

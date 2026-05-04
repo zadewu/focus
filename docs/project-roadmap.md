@@ -17,8 +17,9 @@
 | 5 | Export: Markdown & Obsidian | Complete | 2026-05-03 | High |
 | 6 | Polish, Build & Docs | Complete | 2026-05-03 | Low |
 | 7 | Backup & Migration (Remote Push/Pull) | Complete | 2026-05-04 | Medium |
+| 8 | Search across sessions | Complete | 2026-05-04 | Medium |
 
-**All phases completed:** Go CLI fully functional with all planned features + backup/migration support.
+**All phases completed:** Go CLI fully functional with all planned features + backup/migration support + cross-session search.
 
 ---
 
@@ -37,6 +38,8 @@
 **Phase 6** — `focus shell-init` for bash/zsh/fish/pwsh. Error handling pass, `go vet` clean, docs complete, working tree stays empty verification. ✓
 
 **Phase 7** — `focus remote [url]` (get/set origin), `focus push` (backup to remote), `focus pull [--restore]` (fetch + restore branches for migration). ✓
+
+**Phase 8** — `focus search <keyword>` (cross-session note search with rg → grep → Go fallback). ✓
 
 ---
 
