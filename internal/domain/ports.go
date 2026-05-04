@@ -15,6 +15,8 @@ type FocusRepository interface {
 	PushAll(remote string) error
 	FetchAll(remote string) error
 	CheckoutRemoteBranches(remote string) error
+	CreateBranch(name string) error
+	RenameBranch(oldName, newName string) error
 }
 
 type ConfigStore interface {

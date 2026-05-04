@@ -193,6 +193,34 @@ func (r *Repository) CheckoutRemoteBranches(remote string) error {
 	return nil
 }
 
+// CreateBranch creates a branch at current HEAD.
+// For non-empty repos, the branch is created without switching.
+// For empty repos, falls back to orphan checkout (HEAD changes).
+func (r *Repository) CreateBranch(name string) error {
+	out, _ := r.run("branch", "--format=%(refname:short)")
+	if strings.TrimSpace(out) == "" {
+		if _, err := r.run("checkout", "--orphan", name); err != nil {
+			return fmt.Errorf("create branch %q: %w", name, err)
+		}
+		if _, err := r.run("commit", "--allow-empty", "-m", "imported"); err != nil {
+			return fmt.Errorf("create branch %q: initial commit: %w", name, err)
+		}
+		return nil
+	}
+	if _, err := r.run("branch", name); err != nil {
+		return fmt.Errorf("create branch %q: %w", name, err)
+	}
+	return nil
+}
+
+// RenameBranch renames a branch (works even if it is the currently checked-out branch).
+func (r *Repository) RenameBranch(oldName, newName string) error {
+	if _, err := r.run("branch", "-m", oldName, newName); err != nil {
+		return fmt.Errorf("rename branch %q → %q: %w", oldName, newName, err)
+	}
+	return nil
+}
+
 func (r *Repository) GetNotes(name string) ([]domain.Note, error) {
 	out, err := r.run("log", name, "--pretty=format:%ci|%s")
 	if err != nil {

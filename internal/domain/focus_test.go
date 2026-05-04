@@ -11,18 +11,39 @@ func TestExtractShortName(t *testing.T) {
 		input string
 		want  string
 	}{
-		{"2026-05-03-2125__my-task", "my-task"},  // current format
-		{"2026-05-03--my-task", "my-task"},        // legacy YYYY-MM-DD-- format
-		{"some-task", "some-task"},                // plain name, no prefix
-		{"2026-05-03-2125__", ""},                 // empty short name edge case
-		{"2026-05-03--", ""},                      // empty legacy short name
-		{"my--task", "my--task"},                   // "--" not at position 10
-		{"feat-my-do--work", "feat-my-do--work"},   // non-digit prefix, no misclassification
+		{"2026-05-03-2125__my-task", "my-task"}, // current format
+		{"some-task", "some-task"},               // plain name, no prefix
+		{"2026-05-03-2125__", ""},                // empty short name edge case
+		{"my--task", "my--task"},                 // "--" not at position 10
+		{"feat-my-do--work", "feat-my-do--work"}, // non-digit prefix, no misclassification
 	}
 	for _, tc := range cases {
 		got := ExtractShortName(tc.input)
 		if got != tc.want {
 			t.Errorf("ExtractShortName(%q) = %q, want %q", tc.input, got, tc.want)
+		}
+	}
+}
+
+func TestParseImportName(t *testing.T) {
+	cases := []struct {
+		input    string
+		wantName string
+		wantConv bool
+	}{
+		{"2026-05-04-1156__my-task", "2026-05-04-1156__my-task", false},
+		{"2024-03-05--my-task", "2024-03-05-0000__my-task", true},
+		{"2024-03-05--", "2024-03-05-0000__", true},
+		{"personalize-lazyvim", "2000-01-01-0000__personalize-lazyvim", true},
+		{"2024-09-27--team-pika__foo", "2024-09-27-0000__team-pika__foo", true},
+		{"feat-my-do--work", "2000-01-01-0000__feat-my-do--work", true},
+		{"2026-05-04-1156__", "2026-05-04-1156__", false},
+	}
+	for _, tc := range cases {
+		gotName, gotConv := ParseImportName(tc.input)
+		if gotName != tc.wantName || gotConv != tc.wantConv {
+			t.Errorf("ParseImportName(%q) = (%q, %v), want (%q, %v)",
+				tc.input, gotName, gotConv, tc.wantName, tc.wantConv)
 		}
 	}
 }
@@ -88,6 +109,9 @@ func (m *MockRepository) CheckoutRemoteBranches(remote string) error {
 	m.checkingOut = true
 	return nil
 }
+
+func (m *MockRepository) CreateBranch(name string) error             { return nil }
+func (m *MockRepository) RenameBranch(oldName, newName string) error { return nil }
 
 // MockConfigStore is a mock ConfigStore for testing.
 type MockConfigStore struct {

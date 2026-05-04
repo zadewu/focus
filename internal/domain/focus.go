@@ -50,19 +50,42 @@ func GenerateFullName(shortName string, t time.Time) string {
 	return t.Format("2006-01-02-1504") + nameSeparator + shortName
 }
 
-// ExtractShortName strips any timestamp prefix from a branch name, returning
-// just the user-supplied short name. Handles three formats:
-//   - YYYY-MM-DD-HHmm__name  (current)
-//   - YYYY-MM-DD--name       (legacy)
-//   - name                   (plain, no prefix)
+// ExtractShortName strips the YYYY-MM-DD-HHmm__ timestamp prefix, returning the user name.
 func ExtractShortName(fullName string) string {
 	if _, after, found := strings.Cut(fullName, nameSeparator); found {
 		return after
 	}
-	if isLegacyPrefixed(fullName) {
-		return fullName[12:]
-	}
 	return fullName
+}
+
+// isCurrentPrefixed reports whether s begins with YYYY-MM-DD-HHmm__ (16-char prefix).
+func isCurrentPrefixed(s string) bool {
+	if len(s) < 17 {
+		return false
+	}
+	return isASCIIDigit(s[0]) && isASCIIDigit(s[1]) && isASCIIDigit(s[2]) && isASCIIDigit(s[3]) &&
+		s[4] == '-' &&
+		isASCIIDigit(s[5]) && isASCIIDigit(s[6]) &&
+		s[7] == '-' &&
+		isASCIIDigit(s[8]) && isASCIIDigit(s[9]) &&
+		s[10] == '-' &&
+		isASCIIDigit(s[11]) && isASCIIDigit(s[12]) && isASCIIDigit(s[13]) && isASCIIDigit(s[14]) &&
+		s[15] == '_' && s[16] == '_'
+}
+
+// ParseImportName converts a legacy name to the canonical YYYY-MM-DD-HHmm__name format.
+// Returns (newName, true) if conversion was needed, or (name, false) if already canonical.
+//   - YYYY-MM-DD--name       →  YYYY-MM-DD-0000__name
+//   - plain-name             →  2000-01-01-0000__plain-name
+//   - YYYY-MM-DD-HHmm__name → unchanged
+func ParseImportName(name string) (string, bool) {
+	if isCurrentPrefixed(name) {
+		return name, false
+	}
+	if isLegacyPrefixed(name) {
+		return name[:10] + "-0000__" + name[12:], true
+	}
+	return "2000-01-01-0000__" + name, true
 }
 
 // isLegacyPrefixed reports whether s begins with a YYYY-MM-DD-- date prefix.

@@ -280,6 +280,114 @@ func (s *FocusService) GetLog(name string) (focusName string, notes []Note, err 
 	return displayName, notes, err
 }
 
+// ImportResult describes what happened (or would happen) for a single item during import.
+type ImportResult struct {
+	OldName       string
+	NewName       string
+	Source        string // "branch" or "workspace"
+	DirRenamed    bool
+	BranchRenamed bool
+	BranchCreated bool
+	Skipped       bool
+	SkipReason    string
+}
+
+// ImportFocuses migrates legacy-format branches and workspace dirs to canonical names.
+// Pass 1 renames legacy git branches; Pass 2 renames workspace dirs and creates missing branches.
+// If dryRun is true, no mutations occur.
+func (s *FocusService) ImportFocuses(dryRun bool) ([]ImportResult, error) {
+	var results []ImportResult
+
+	// Pass 1: rename legacy git branches
+	focuses, err := s.repo.List()
+	if err != nil {
+		return nil, err
+	}
+	for _, f := range focuses {
+		branchName := f.Name
+		if f.Archived {
+			branchName = "archive/" + f.Name
+		}
+		newName, converted := ParseImportName(f.Name)
+		if !converted {
+			continue
+		}
+		newBranch := newName
+		if f.Archived {
+			newBranch = "archive/" + newName
+		}
+		res := ImportResult{OldName: branchName, NewName: newBranch, Source: "branch"}
+		if !dryRun {
+			if s.repo.Exists(newBranch) {
+				res.Skipped, res.SkipReason = true, "target branch already exists"
+			} else if err := s.repo.RenameBranch(branchName, newBranch); err != nil {
+				res.Skipped, res.SkipReason = true, fmt.Sprintf("rename branch: %v", err)
+			} else {
+				res.BranchRenamed = true
+			}
+		}
+		results = append(results, res)
+	}
+
+	// Pass 2: rename workspace dirs + create missing branches
+	root, err := s.WorkspaceRoot()
+	if err != nil {
+		return nil, err
+	}
+	entries, err := os.ReadDir(root)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return results, nil
+		}
+		return nil, err
+	}
+	for _, e := range entries {
+		if !e.IsDir() {
+			continue
+		}
+		oldName := e.Name()
+		newName, converted := ParseImportName(oldName)
+
+		// skip already-canonical dirs that already have a branch
+		if !converted && s.repo.Exists(newName) {
+			continue
+		}
+
+		res := ImportResult{OldName: oldName, NewName: newName, Source: "workspace"}
+
+		if converted && !dryRun {
+			oldPath := filepath.Join(root, oldName)
+			newPath := filepath.Join(root, newName)
+			if _, statErr := os.Stat(newPath); statErr == nil {
+				res.Skipped, res.SkipReason = true, "target directory already exists"
+				results = append(results, res)
+				continue
+			}
+			if err := os.Rename(oldPath, newPath); err != nil {
+				res.Skipped, res.SkipReason = true, fmt.Sprintf("rename dir: %v", err)
+				results = append(results, res)
+				continue
+			}
+			res.DirRenamed = true
+		}
+
+		// check branch existence unconditionally so dry-run can preview creation
+		if !s.repo.Exists(newName) {
+			if dryRun {
+				res.BranchCreated = true // would create
+			} else if err := s.repo.CreateBranch(newName); err != nil {
+				// record error without Skipped so partial dir rename is still visible
+				res.SkipReason = fmt.Sprintf("create branch: %v", err)
+			} else {
+				res.BranchCreated = true
+			}
+		}
+
+		results = append(results, res)
+	}
+	return results, nil
+}
+
 const defaultRemote = "origin"
 
 func (s *FocusService) RemoteGet() (string, error) {
