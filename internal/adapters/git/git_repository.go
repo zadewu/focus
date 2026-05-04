@@ -222,7 +222,7 @@ func (r *Repository) RenameBranch(oldName, newName string) error {
 }
 
 func (r *Repository) GetNotes(name string) ([]domain.Note, error) {
-	out, err := r.run("log", name, "--pretty=format:%ci|%s")
+	out, err := r.run("log", name, "--first-parent", "--pretty=format:%ci|%s")
 	if err != nil {
 		return nil, fmt.Errorf("get notes for %q: %w", name, err)
 	}
