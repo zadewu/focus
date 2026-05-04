@@ -80,7 +80,20 @@ focus export --obsidian
     else: warn + skip
 ```
 
-### 5. Shell Integration
+### 5. Search Across Sessions
+```
+focus search "bug fix"
+  → repo.List() — fetch all branches (active + archived)
+  → repo.GetNotes(branch) for each branch — collect all notes
+  → filterNotes(notes, keyword) — pluggable search:
+      - rg (ripgrep) if available
+      - grep if rg not found
+      - strings.Contains fallback if neither found
+  → return SearchResult{Focus, Note} pairs for matches
+  → ui.PrintSearchResults() — render with context
+```
+
+### 6. Shell Integration
 ```
 eval "$(focus shell-init)"  # bash/zsh
 focus shell-init | source   # fish
@@ -129,14 +142,14 @@ focus switch 2026-05-03-2125__my-task
 
 | Layer | Package | Responsibility |
 |-------|---------|----------------|
-| Primary adapter | `cmd/*` | Parse args, call FocusService, print output |
-| Domain | `domain/service.go` | Use cases; pure business logic |
+| Primary adapter | `cmd/*` | Parse args, call FocusService, print output (includes `search.go` for cross-session search) |
+| Domain | `domain/service.go` | Use cases; pure business logic (SearchNotes, filterNotes) |
 | Domain | `domain/ports.go` | Port interfaces (FocusRepository, ConfigStore, etc.) |
-| Domain | `domain/focus.go` | Focus entity, Note value object, name validation |
+| Domain | `domain/focus.go` | Focus entity, Note value object, SearchResult, name validation |
 | Secondary adapter | `adapters/git/` | FocusRepository via `exec git` |
 | Secondary adapter | `adapters/config/` | ConfigStore via `git config focus.*` |
 | Secondary adapter | `adapters/workspace/` | WorkspaceStore via filesystem |
 | Secondary adapter | `adapters/export/` | Exporter implementations (markdown, obsidian) |
-| Secondary adapter | `adapters/ui/` | lipgloss terminal renderer |
+| Secondary adapter | `adapters/ui/` | lipgloss terminal renderer; includes PrintSearchResults |
 
 See [system-architecture-storage.md](system-architecture-storage.md) for storage model, config keys, and Obsidian vault structure.
