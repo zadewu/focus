@@ -1,174 +1,98 @@
-# Focus
+# focus
 
-A personal terminal app to manage work sessions. Each session (focus) gets its own metadata (notes, timestamp) and workspace directory—all backed by git internals, exported to Obsidian on demand.
+A terminal tool for managing personal work sessions. All session metadata lives in git (`~/.focus/`) — zero files in the working tree. Real work lives in `~/focus-workspaces/<name>/`.
 
----
+## Install
 
-## Quick Install
+**Linux & macOS:**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/zadewu/focus/main/install.sh | sh
+```
+
+The script detects your OS and architecture, downloads the binary, verifies the SHA256 checksum, and installs to `~/.local/bin` (or `/usr/local/bin` if that's not writable). Set `FOCUS_VERSION=vX.Y.Z` to pin a specific release.
+
+**Via Go:**
 
 ```bash
 go install github.com/zadewu/focus@latest
 ```
 
-Requires Go 1.22+ and git.
-
----
+Binaries and checksums for each release: [github.com/zadewu/focus/releases](https://github.com/zadewu/focus/releases)
 
 ## Quick Start
 
 ```bash
-# Create a new focus session
-focus new debug-auth-bug
-cd ~/focus-workspaces/debug-auth-bug
-
-# Add a note
-focus note "Found the issue in token validation"
-
-# Switch to another focus
-focus switch planning-v2
-
-# See all sessions
-focus list
-
-# Export to Obsidian
-focus export --obsidian
+focus new my-task          # create session + workspace
+focus note "first thought" # add a note
+focus log                  # view notes
+focus list                 # list all sessions
+focus archive my-task      # archive when done
 ```
-
----
 
 ## Commands
 
-| Command | Purpose | Example |
-|---------|---------|---------|
-| `focus` | Show current focus + recent notes | `focus` |
-| `focus new <name>` | Create session + workspace dir | `focus new debug-auth` |
-| `focus switch <name>` | Switch active session | `focus switch planning-v2` |
-| `focus list` | List all sessions (active & archived) | `focus list` |
-| `focus archive [name]` | Archive session (workspace preserved) | `focus archive debug-auth` |
-| `focus note [msg]` | Add note (or open $EDITOR) | `focus note "found it"` |
-| `focus log [name]` | Show notes for current or named session | `focus log` |
-| `focus workspace [name]` | Print workspace directory path | `focus workspace` |
-| `focus export [name]` | Export to markdown | `focus export` |
-| `focus export --obsidian` | Export to Obsidian vault | `focus export --obsidian` |
-| `focus config <key> <val>` | Set config value | `focus config obsidian-vault ~/Obsidian` |
-
----
-
-## Configuration
-
-Set config values with `focus config <key> <value>`:
-
-| Key | Default | Purpose |
-|-----|---------|---------|
-| `focus.workspace-root` | `~/focus-workspaces` | Root directory for workspace dirs |
-| `focus.obsidian-vault` | *(required for export)* | Path to Obsidian vault |
-| `focus.obsidian-journal-pattern` | `01 Daily/{YYYY}/{MM}/{YYYY}-{MM}-{DD}` | Journal file path pattern |
-
-**Example:**
-```bash
-focus config obsidian-vault ~/Obsidian/Personal
-```
-
----
-
-## How It Works
-
-Focus uses a two-part design:
-
-**Metadata layer** (`~/.focus/`) — A git repository with empty working tree
-- Branches = session names
-- Commits = notes (empty commits with message body)
-- Config = settings (obsidian-vault, workspace-root, etc.)
-
-**Workspace layer** (`~/focus-workspaces/<name>/`) — Regular directories
-- User manages content (code, documents, notes, etc.)
-- Preserved on archive
-- Exported to Obsidian as markdown + attachments
-
-When you run `focus note "text"`, it creates a git commit with your message on the current branch. When you export to Obsidian, it reads all commits (notes), renders them chronologically, and appends workspace markdown files to a vault focus file.
-
----
+| Command | Description |
+|---------|-------------|
+| `focus` | Show current session + recent notes |
+| `focus new <name>` | Create session and workspace |
+| `focus switch <name>` | Switch active session |
+| `focus list` | List all sessions |
+| `focus archive [name]` | Archive a session |
+| `focus note [msg]` | Add a note (opens $EDITOR if no msg) |
+| `focus log [name]` | Show note history |
+| `focus workspace [name]` | Print workspace path |
+| `focus config <key> [value]` | Get/set config |
+| `focus export [name]` | Export to markdown |
+| `focus export [name] --obsidian` | Export to Obsidian vault |
+| `focus remote [url]` | Get or set backup remote URL |
+| `focus push` | Push all sessions to remote |
+| `focus pull [--restore]` | Fetch sessions from remote |
 
 ## Obsidian Integration
 
-### Setup
+```bash
+focus config obsidian-vault ~/Documents/my-vault
+focus export --obsidian        # writes vault file + journal entry + attachments zip
+```
+
+## Backup & Migration
 
 ```bash
-focus config obsidian-vault /path/to/your/Obsidian/vault
+# Set a remote (GitHub or any Git host) and push all sessions
+focus remote https://github.com/you/focus-data.git
+focus push
+
+# On a new machine: clone the repo, then restore local branches
+git clone https://github.com/you/focus-data.git ~/.focus/
+focus pull --restore
 ```
 
-### Export
-
-```bash
-focus export --obsidian
-```
-
-Creates:
-- `<vault>/Focus/YYYY-MM-DD-HHmm__<name>.md` — Focus notes + workspace .md files
-- `<vault>/Focus/attachments/<name>.zip` — Non-markdown workspace files
-- Updates `<vault>/01 Daily/YYYY/MM/YYYY-MM-DD.md` — Appends ## Focus section with today's notes (if file exists)
-
-### Example Journal Section
-
-```markdown
-## Focus
-
-- [[Focus/2026-05-03-1430__debug-auth|debug-auth]] — 2 notes today
-  - 14:35 — Found the token validation bug
-  - 16:22 — Fix in place, testing now
-- [[Focus/2026-05-03-1100__planning-v2|planning-v2]] — 1 note today
-  - 11:00 — Drafted new API structure
-```
-
----
+`focus pull` without `--restore` fetches remote state (updates remote-tracking refs).
+`focus pull --restore` also creates a local branch for every remote branch — use this after migrating to a new machine.
 
 ## Shell Integration
 
-Add this function to your `.bashrc`, `.zshrc`, or `config.fish`:
+Source once to auto-`cd` into the workspace on `focus new` / `focus switch`:
 
-### Bash/Zsh
 ```bash
-function fcd() { cd "$(focus workspace ${1:-.})"; }
+# bash / zsh — add to ~/.bashrc or ~/.zshrc
+eval "$(focus shell-init)"
+
+# fish — add to ~/.config/fish/config.fish
+focus shell-init | source
+
+# PowerShell — add to $PROFILE
+Invoke-Expression (focus shell-init --shell pwsh)
 ```
 
-### Fish
-```fish
-function fcd; cd (focus workspace $argv); end
-```
+To preview the script without sourcing: `focus shell-init --shell fish`
 
-**Usage:**
-```bash
-fcd debug-auth
-# Same as: cd ~/focus-workspaces/debug-auth
-```
+## How It Works
 
----
+- **Sessions** = branches in `~/.focus/` (a git repo with an empty working tree)
+- **Notes** = empty git commits with the message as the note body
+- **Config** = `git config focus.*` in `~/.focus/.git/config`
+- **Workspaces** = plain directories in `~/focus-workspaces/<name>/`
 
-## Documentation
-
-- **[Project Overview](./docs/project-overview-pdr.md)** — Goals, user personas, feature list
-- **[System Architecture](./docs/system-architecture.md)** — Two-part design, data flow, config storage
-- **[Code Standards](./docs/code-standards.md)** — Go conventions, error handling, cobra patterns
-- **[Codebase Structure](./docs/codebase-summary.md)** — Planned packages and modules
-- **[Project Roadmap](./docs/project-roadmap.md)** — 6 phases, timeline, deliverables
-
----
-
-## Status
-
-**Current:** Design phase (documentation complete, implementation starting)
-
-See [Project Roadmap](./docs/project-roadmap.md) for phased delivery plan (4 weeks estimated).
-
----
-
-## License
-
-[To be determined]
-
----
-
-## Author
-
-Designed and implemented by Huy Phan  
-Project: `github.com/zadewu/focus`
+All metadata is queryable with standard git tools: `git -C ~/.focus log`, `git -C ~/.focus branch -a`.
