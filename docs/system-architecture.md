@@ -1,7 +1,7 @@
 # Focus: System Architecture
 
 **Status:** Implemented (MVP complete)  
-**Last updated:** 2026-05-03
+**Last updated:** 2026-05-04
 
 ---
 
@@ -150,6 +150,6 @@ focus switch 2026-05-03-2125__my-task
 | Secondary adapter | `adapters/config/` | ConfigStore via `git config focus.*` |
 | Secondary adapter | `adapters/workspace/` | WorkspaceStore via filesystem |
 | Secondary adapter | `adapters/export/` | Exporter implementations (markdown, obsidian) |
-| Secondary adapter | `adapters/ui/` | lipgloss terminal renderer; includes PrintSearchResults |
+| Secondary adapter | `adapters/ui/` | lipgloss terminal renderer; interactive TUI (Bubble Tea); word-wrap with adaptive colours |
 
 See [system-architecture-storage.md](system-architecture-storage.md) for storage model, config keys, and Obsidian vault structure.

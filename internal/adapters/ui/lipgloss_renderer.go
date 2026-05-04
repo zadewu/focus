@@ -8,21 +8,24 @@ import (
 	"github.com/zadewu/focus/internal/domain"
 )
 
+// mutedColor is readable on both dark/transparent and light terminals.
+var mutedColor = lipgloss.AdaptiveColor{Light: "#606060", Dark: "#aaaaaa"}
+
 var (
 	// ActiveStyle renders active focus names in bold green.
 	ActiveStyle = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("10"))
-	// ArchivedStyle renders archived focus names dimmed.
-	ArchivedStyle = lipgloss.NewStyle().Faint(true).Foreground(lipgloss.Color("8"))
+	// ArchivedStyle renders archived focus names in a muted tone readable on any background.
+	ArchivedStyle = lipgloss.NewStyle().Foreground(mutedColor)
 	// CurrentMark renders the active-focus indicator arrow.
 	CurrentMark = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("14"))
 	// HeaderStyle renders section headers.
 	HeaderStyle = lipgloss.NewStyle().Bold(true).Underline(true)
 	// DimStyle renders secondary/supplementary text.
-	DimStyle = lipgloss.NewStyle().Faint(true)
+	DimStyle = lipgloss.NewStyle().Foreground(mutedColor)
 	// NoteStyle renders note message text.
 	NoteStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("15"))
-	// TimestampStyle renders note timestamps in muted grey.
-	TimestampStyle = lipgloss.NewStyle().Faint(true).Foreground(lipgloss.Color("8"))
+	// TimestampStyle renders note timestamps in a muted tone readable on any background.
+	TimestampStyle = lipgloss.NewStyle().Foreground(mutedColor)
 )
 
 // PrintFocusList renders the full focus list, separating active from archived.
@@ -50,13 +53,18 @@ func PrintFocusList(focuses []domain.Focus, current string) {
 	}
 }
 
+// logPrefixLen is the visible width of "  HH:MM  " (2 spaces + 5 time chars + 2 spaces).
+const logPrefixLen = 9
+
 // PrintLog renders the full note history for a focus.
 func PrintLog(focusName string, notes []domain.Note) {
 	fmt.Println(HeaderStyle.Render(focusName))
 	fmt.Println()
+	termW := getTerminalWidth()
 	for _, n := range notes {
 		ts := FormatTimestamp(n.Timestamp)
-		fmt.Printf("  %s  %s\n", TimestampStyle.Render(ts), NoteStyle.Render(n.Message))
+		msg := wordWrap(n.Message, termW-logPrefixLen, logPrefixLen)
+		fmt.Printf("  %s  %s\n", TimestampStyle.Render(ts), NoteStyle.Render(msg))
 	}
 }
 
@@ -70,10 +78,12 @@ func PrintStatus(current, wsPath string, notes []domain.Note) {
 		fmt.Println(DimStyle.Render("  (none yet — run: focus note <message>)"))
 		return
 	}
+	termW := getTerminalWidth()
 	limit := min(5, len(notes))
 	for _, n := range notes[:limit] {
 		ts := FormatTimestamp(n.Timestamp)
-		fmt.Printf("  %s  %s\n", TimestampStyle.Render(ts), NoteStyle.Render(n.Message))
+		msg := wordWrap(n.Message, termW-logPrefixLen, logPrefixLen)
+		fmt.Printf("  %s  %s\n", TimestampStyle.Render(ts), NoteStyle.Render(msg))
 	}
 }
 

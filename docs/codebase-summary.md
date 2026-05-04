@@ -1,6 +1,6 @@
 # Focus: Codebase Structure
 
-**Status:** Implemented (MVP complete)  
+**Status:** Implemented (MVP complete + UI/UX polish)  
 **Architecture:** Hexagonal (ports & adapters)  
 **Language:** Go 1.22+  
 **Module:** `github.com/zadewu/focus`  
@@ -51,7 +51,9 @@ focus/
         │   ├── markdown_exporter.go           # Exporter → plain markdown
         │   └── obsidian_exporter.go           # Exporter → Obsidian vault
         └── ui/
-            └── lipgloss_renderer.go           # Terminal renderer (lipgloss)
+            ├── lipgloss_renderer.go           # Terminal renderer (lipgloss + adaptive colours)
+            ├── interactive_list.go            # Bubble Tea TUI (scroll + fuzzy filter)
+            └── terminal_utils.go              # word-wrap + terminal width detection
 ```
 
 ---
@@ -137,7 +139,13 @@ Renders notes + workspace `.md` files to a markdown file in CWD.
 Writes `<vault>/Focus/YYYY-MM-DD-HHmm__<name>.md`, zips non-`.md` files, appends journal.
 
 ### `ui/lipgloss_renderer.go`
-Styles for status, list, log output. Not an interface-backed adapter — imported directly by `cmd/`.
+Styles for status, list, log output using adaptive colours (readable on both light and dark terminals). Not an interface-backed adapter — imported directly by `cmd/`.
+
+### `ui/interactive_list.go`
+Bubble Tea TUI model for `focus list` interactive mode (when run in a TTY). Provides scrollable, fuzzy-filterable list with `/` filter toggle, Enter to select/switch, `q`/Esc to cancel. Falls back to plain list when piped.
+
+### `ui/terminal_utils.go`
+Terminal utilities: `getTerminalWidth()` detects terminal column count, `wordWrap()` breaks long notes across lines with indentation aligned to message start. Used by `PrintLog()` and `PrintStatus()`.
 
 ---
 
@@ -166,6 +174,8 @@ service   := domain.NewFocusService(repo, cfg, ws)
 
 All source files implemented and tested:
 - **cmd/**: 15 command handlers (new, switch, list, archive, note, log, workspace, config, export, import, search, shell-init, remote, push, pull)
+  - `list.go` — interactive TUI when connected to TTY; falls back to plain list when piped
+  - `log.go` — displays notes with word-wrapped output
 - **domain/**: focus.go, service.go, ports.go fully implemented
   - `SearchResult` struct, `SearchNotes()` method — cross-session search with pluggable backends
   - `isCurrentPrefixed()` — detect canonical YYYY-MM-DD-HHmm__ prefix
@@ -173,6 +183,9 @@ All source files implemented and tested:
   - `ImportFocuses()` — two-pass migration (branches, then workspace dirs)
 - **adapters/**: git, config, workspace, export (markdown + obsidian), and ui all functional
   - `CreateBranch()`, `RenameBranch()` added to git adapter
+  - **UI enhancements**: Adaptive colour palette (readable on light/dark/transparent terminals), interactive Bubble Tea TUI for `focus list`, word-wrap for long notes
   - `PrintSearchResults()` in ui — renders search matches with focus/note context
+  - `RunInteractiveList()` — scrollable, fuzzy-filterable session selector
+  - `wordWrap()` — intelligent line breaking with indentation alignment
 - **Tests**: Comprehensive unit test coverage for domain logic + remote operations + import migration
 - **Deployment**: Ready for `go install github.com/zadewu/focus@latest`

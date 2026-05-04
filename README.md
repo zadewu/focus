@@ -25,8 +25,8 @@ Binaries and checksums for each release: [github.com/zadewu/focus/releases](http
 ```bash
 focus new my-task          # create session + workspace
 focus note "first thought" # add a note
-focus log                  # view notes
-focus list                 # list all sessions
+focus log                  # view notes (word-wrapped)
+focus list                 # interactive selector (or plain list if piped)
 focus archive my-task      # archive when done
 ```
 
@@ -37,7 +37,7 @@ focus archive my-task      # archive when done
 | `focus` | Show current session + recent notes |
 | `focus new <name>` | Create session and workspace |
 | `focus switch <name>` | Switch active session |
-| `focus list` | List all sessions |
+| `focus list` | Interactive session selector (TTY) or plain list (piped) |
 | `focus archive [name]` | Archive a session |
 | `focus note [msg]` | Add a note (opens $EDITOR if no msg) |
 | `focus log [name]` | Show note history |

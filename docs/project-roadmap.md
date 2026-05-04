@@ -18,8 +18,9 @@
 | 6 | Polish, Build & Docs | Complete | 2026-05-03 | Low |
 | 7 | Backup & Migration (Remote Push/Pull) | Complete | 2026-05-04 | Medium |
 | 8 | Search across sessions | Complete | 2026-05-04 | Medium |
+| 9 | UI/UX Enhancements | Complete | 2026-05-04 | Low |
 
-**All phases completed:** Go CLI fully functional with all planned features + backup/migration support + cross-session search.
+**All phases completed:** Go CLI fully functional with all planned features + backup/migration support + cross-session search + interactive TUI + word-wrap.
 
 ---
 
@@ -40,6 +41,8 @@
 **Phase 7** — `focus remote [url]` (get/set origin), `focus push` (backup to remote), `focus pull [--restore]` (fetch + restore branches for migration). ✓
 
 **Phase 8** — `focus search <keyword>` (cross-session note search with rg → grep → Go fallback). ✓
+
+**Phase 9** — UI/UX polish: interactive Bubble Tea TUI for `focus list` (scroll + fuzzy filter), adaptive colour palette for dark/transparent terminals, word-wrap for long notes in `focus log` with indentation alignment. ✓
 
 ---
 
