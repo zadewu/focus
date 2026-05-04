@@ -1,41 +1,42 @@
 # Focus: Project Roadmap
 
-**Status:** Planning phase  
-**Target Release:** 2026-05-31  
+**Status:** Complete (MVP shipped)  
+**Release Date:** 2026-05-03  
 **Module:** `github.com/zadewu/focus`
 
 ---
 
 ## Phases
 
-| # | Phase | Status | Est. Days | Complexity | Depends On |
-|---|-------|--------|-----------|-----------|-----------|
-| 1 | Project Scaffold + Auto-Init | Pending | 2 | Low | — |
-| 2 | Core Focus Management | Pending | 5 | Medium | 1 |
-| 3 | Notes & Log | Pending | 3 | Low | 1 |
-| 4 | Status, Workspace & Config | Pending | 3 | Low | 2, 3 |
-| 5 | Export: Markdown & Obsidian | Pending | 8 | High | 3, 4 |
-| 6 | Polish, Build & Docs | Pending | 2 | Low | 5 |
+| # | Phase | Status | Completed | Complexity |
+|---|-------|--------|-----------|-----------|
+| 1 | Project Scaffold + Auto-Init | Complete | 2026-05-03 | Low |
+| 2 | Core Focus Management | Complete | 2026-05-03 | Medium |
+| 3 | Notes & Log | Complete | 2026-05-03 | Low |
+| 4 | Status, Workspace & Config | Complete | 2026-05-03 | Low |
+| 5 | Export: Markdown & Obsidian | Complete | 2026-05-03 | High |
+| 6 | Polish, Build & Docs | Complete | 2026-05-03 | Low |
+| 7 | Backup & Migration (Remote Push/Pull) | Complete | 2026-05-04 | Medium |
 
-**Total:** ~23 days (4 weeks)
-
-Plan files: `plans/260503-1211-focus-terminal-app-go-cli/`
+**All phases completed:** Go CLI fully functional with all planned features + backup/migration support.
 
 ---
 
 ## Phase Summaries
 
-**Phase 1** — Bootstrap Go module, cobra root, `ensureInit()` for `~/.focus/`, `internal/git` + `internal/config` packages.
+**Phase 1** — Bootstrap Go module, cobra root, `ensureInit()` for `~/.focus/`, `internal/git` + `internal/config` packages. ✓
 
-**Phase 2** — `focus new`, `switch`, `list`, `archive`. Adds `internal/workspace`. Branch name validation.
+**Phase 2** — `focus new`, `switch`, `list`, `archive`. Adds `internal/workspace`. Timestamp-based branch naming: `YYYY-MM-DD-HHmm__name`. ✓
 
-**Phase 3** — `focus note` (inline + $EDITOR), `focus log`. Core data primitive: empty commits as notes.
+**Phase 3** — `focus note` (inline + $EDITOR), `focus log`. Core data primitive: empty commits as notes. Short-name resolution for all commands. ✓
 
-**Phase 4** — lipgloss styling in `internal/ui`, root status display, `focus workspace`, `focus config`.
+**Phase 4** — lipgloss styling in `internal/ui`, root status display, `focus workspace`, `focus config`. ✓
 
-**Phase 5** — `focus export` (markdown) + `focus export --obsidian` (vault file + journal append + non-md zip).
+**Phase 5** — `focus export` (markdown) + `focus export --obsidian` (vault file using full branch name + journal append + non-md zip). ✓
 
-**Phase 6** — Error handling pass, `go vet` clean, README, working tree stays empty verification.
+**Phase 6** — `focus shell-init` for bash/zsh/fish/pwsh. Error handling pass, `go vet` clean, docs complete, working tree stays empty verification. ✓
+
+**Phase 7** — `focus remote [url]` (get/set origin), `focus push` (backup to remote), `focus pull [--restore]` (fetch + restore branches for migration). ✓
 
 ---
 
@@ -65,8 +66,10 @@ Release: 2026-05-31
 
 ## Success Metrics
 
-- All 10 commands work end-to-end
+- All 10 commands (including `shell-init`) work end-to-end
 - `go test ./...` passes, >80% coverage
+- Short-name resolution works for all commands (no ambiguity handling errors in normal case)
 - Operations complete <500ms
 - `~/.focus/` working tree stays empty throughout
 - `go install github.com/zadewu/focus@latest` works
+- Shell integration auto-cd works for bash, zsh, fish, and pwsh

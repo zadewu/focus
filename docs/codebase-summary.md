@@ -1,9 +1,10 @@
-# Focus: Planned Codebase Structure
+# Focus: Codebase Structure
 
-**Status:** Pre-implementation design  
+**Status:** Implemented (MVP complete)  
 **Architecture:** Hexagonal (ports & adapters)  
 **Language:** Go 1.22+  
-**Module:** `github.com/zadewu/focus`
+**Module:** `github.com/zadewu/focus`  
+**Last updated:** 2026-05-03
 
 ---
 
@@ -25,7 +26,11 @@ focus/
 │   ├── log.go                                 # focus log [name]
 │   ├── workspace.go                           # focus workspace [name]
 │   ├── config.go                              # focus config <key> <value>
-│   └── export.go                              # focus export [--obsidian]
+│   ├── export.go                              # focus export [--obsidian]
+│   ├── remote.go                              # focus remote [url]
+│   ├── push.go                                # focus push
+│   ├── pull.go                                # focus pull [--restore]
+│   └── shell_init.go                          # focus shell-init
 │
 └── internal/
     ├── domain/                                # DOMAIN CORE — no external deps
@@ -68,6 +73,11 @@ type FocusRepository interface {
     AddNote(msg string) error
     GetNotes(name string) ([]Note, error)
     Exists(name string) bool
+    RemoteGet(name string) (string, error)
+    RemoteSet(name, url string) error
+    PushAll(remote string) error
+    FetchAll(remote string) error
+    CheckoutRemoteBranches(remote string) error
 }
 
 type ConfigStore interface {
@@ -95,6 +105,10 @@ Accepts port interfaces via constructor injection:
 - `ListFocuses()` — repo.List
 - `GetNotes(name)` — repo.GetNotes
 - `Export(name, exporter)` — collect notes + files, call exporter
+- `RemoteGet()` — get configured origin URL
+- `RemoteSet(url)` — set origin URL
+- `Push()` — push all branches + tags to origin
+- `Pull(restore)` — fetch from origin; create local tracking branches if restore=true
 
 ---
 
@@ -139,4 +153,13 @@ service   := domain.NewFocusService(repo, cfg, ws)
 - **Errors:** domain returns domain errors; adapters wrap git/fs errors with context
 - **Config defaults:** defined in `FocusService`, not in adapters
 
-**Last updated:** 2026-05-03
+---
+
+## Implementation Status
+
+All source files implemented and tested:
+- **cmd/**: 13 command handlers (new, switch, list, archive, note, log, workspace, config, export, shell-init, remote, push, pull)
+- **domain/**: focus.go, service.go, ports.go fully implemented
+- **adapters/**: git, config, workspace, export (markdown + obsidian), and ui all functional
+- **Tests**: Comprehensive unit test coverage for domain logic + remote operations
+- **Deployment**: Ready for `go install github.com/zadewu/focus@latest`

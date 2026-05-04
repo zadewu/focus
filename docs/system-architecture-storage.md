@@ -10,16 +10,18 @@
 ~/.focus/
 ├── .git/
 │   ├── refs/heads/
-│   │   ├── debug-auth           ← active focus (branch)
-│   │   ├── planning-v2
-│   │   └── archive/old-task     ← archived focus
-│   └── config                   ← focus.* config keys
+│   │   ├── 2026-05-03-2125__my-task      ← active focus (full timestamp__name)
+│   │   ├── 2026-05-03-1900__planning
+│   │   └── archive/2026-05-03-0800__old  ← archived focus
+│   └── config                             ← focus.* config keys
 └── (empty working tree, no files ever checked out)
 ```
 
 | Concept | Git primitive |
 |---------|--------------|
-| Focus name | Branch name |
+| Focus (short) name | User input (e.g., `my-task`) |
+| Full focus name | `YYYY-MM-DD-HHmm__<name>` (e.g., `2026-05-03-2125__my-task`) |
+| Branch name | Full focus name (or prefixed with `archive/` if archived) |
 | Note | Empty commit message |
 | Note timestamp | Commit date (automatic) |
 | Active focus | HEAD |
@@ -39,11 +41,11 @@
 
 ```
 ~/focus-workspaces/
-├── debug-auth/
+├── 2026-05-03-2125__my-task/
 │   ├── notes.md          ← user-created markdown (exported to vault)
 │   ├── repro.sh          ← non-md (zipped on obsidian export)
 │   └── cloned-repo/      ← arbitrary structure, user owns it
-└── planning-v2/
+└── 2026-05-03-1900__planning/
     └── v2-design.md
 ```
 
@@ -77,21 +79,21 @@
 ```
 <vault>/
 ├── Focus/
-│   ├── 2026-05-03-0900__debug-auth.md    ← focus file (creation timestamp)
+│   ├── 2026-05-03-2125__my-task.md       ← focus file (full branch name)
 │   └── attachments/
-│       └── debug-auth.zip                ← non-md workspace files
+│       └── 2026-05-03-2125__my-task.zip  ← non-md workspace files
 └── 01 Daily/2026/05/2026-05-03.md        ← user's daily journal
 ```
 
-**Focus file content** (`Focus/YYYY-MM-DD-HHmm__<name>.md`):
+**Focus file content** (`Focus/{fullBranchName}.md`):
 ```markdown
-# Focus: debug-auth
+# Focus: my-task
 
-**Created:** 2026-05-03 09:00
+**Created:** 2026-05-03 21:25
 
 ## Notes
 
-- **09:00** — Started investigation
+- **21:30** — Started investigation
 - **14:22** — Found token validation bug
 
 ## Workspace Files
@@ -104,9 +106,9 @@
 ```markdown
 ## Focus
 
-- [[Focus/2026-05-03-0900__debug-auth|debug-auth]] — 2 notes today
-  - 09:30 — Started investigation
-  - 14:22 — Found token validation bug
+- [[Focus/2026-05-03-2125__my-task|my-task]] — 2 notes today
+  - 21:30 — Started investigation
+  - 22:45 — Found token validation bug
 ```
 
 ---

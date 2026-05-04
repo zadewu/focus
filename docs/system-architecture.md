@@ -1,6 +1,6 @@
 # Focus: System Architecture
 
-**Status:** Design (pre-implementation)  
+**Status:** Implemented (MVP complete)  
 **Last updated:** 2026-05-03
 
 ---
@@ -12,26 +12,27 @@ Focus is a two-layer system: **metadata layer** (git) + **workspace layer** (fil
 ```
 ┌──────────────────────────────────────────��──────────────────────┐
 │  User Shell (bash/zsh/fish)                                     │
-│  $ focus new debug-auth                                         │
+│  $ focus new my-task                                            │
 │  $ focus note "found the bug"                                   │
-│  $ fcd debug-auth  (cd ~/focus-workspaces/debug-auth)          │
+│  $ focus switch 2026-05-03-2125__my-task                        │
+│  (auto-cd via: eval "$(focus shell-init)")                      │
 └──────────┬──────────────────────────────────────────────────────┘
            │
            ↓
 ┌─────────────────────────────────────────────────────────────────┐
 │  Focus CLI (Go binary)                                          │
 │  cmd/: root, new, switch, list, archive, note, log,            │
-│        workspace, config, export                                │
+│        workspace, config, export, shell-init                    │
 │  internal/: git, config, workspace, export, ui                  │
 └──────────┬──────────────────┬──────────────────────────────────┘
            │                  │
            ↓                  ↓
     ┌────────────┐    ┌─────────────────────┐
-    │ ~/.focus/  │    │ ~/focus-workspaces/ │
-    │ (git repo) │    │ debug-auth/         │
-    │ refs/heads │    │   notes.md          │
-    │   debug-   │    │   repro.sh          │
-    │   archive/ │    │ planning-v2/        │
+    │ ~/.focus/  │    │ ~/focus-workspaces/  │
+    │ (git repo) │    │ 2026-05-03-2125__   │
+    │ refs/heads │    │   my-task/          │
+    │   2026-... │    │   notes.md          │
+    │   archive/ │    │   repro.sh          │
     └────────────┘    └─────────────────────┘
 ```
 
@@ -41,30 +42,56 @@ Focus is a two-layer system: **metadata layer** (git) + **workspace layer** (fil
 
 ### 1. Create Focus Session
 ```
-focus new debug-auth
-  → ValidateName("debug-auth")
-  → git checkout -b debug-auth  (in ~/.focus/)
-  → mkdir ~/focus-workspaces/debug-auth
-  → print: "Workspace: ~/focus-workspaces/debug-auth"
+focus new my-task
+  → ValidateName("my-task")
+  → generate full name: 2026-05-03-2125__my-task
+  → git checkout -b 2026-05-03-2125__my-task  (in ~/.focus/)
+  → mkdir ~/focus-workspaces/2026-05-03-2125__my-task
+  → print: "Created: 2026-05-03-2125__my-task"
+           "Workspace: ~/focus-workspaces/2026-05-03-2125__my-task"
 ```
 
-### 2. Add Note
+### 2. Switch Focus (accepts short or full names)
+```
+focus switch my-task
+  OR
+focus switch 2026-05-03-2125__my-task
+  → resolveFullName("my-task") → "2026-05-03-2125__my-task"
+  → git checkout 2026-05-03-2125__my-task
+  → return workspace path for auto-cd
+```
+
+### 3. Add Note
 ```
 focus note "found the bug"
   → check HEAD branch exists + is not archived
   → git commit --allow-empty -m "found the bug"
 ```
 
-### 3. Export to Obsidian
+### 4. Export to Obsidian
 ```
 focus export --obsidian
   → read git log on current branch (commits = notes)
   → read workspace .md files
-  → write <vault>/Focus/YYYY-MM-DD-HHmm__<name>.md
-  → zip non-.md workspace files → <vault>/Focus/attachments/<name>.zip
+  → write <vault>/Focus/2026-05-03-2125__my-task.md
+  → zip non-.md workspace files → <vault>/Focus/attachments/2026-05-03-2125__my-task.zip
   → if <vault>/01 Daily/YYYY/MM/YYYY-MM-DD.md exists:
       append/update ## Focus section with [[wikilinks]]
     else: warn + skip
+```
+
+### 5. Shell Integration
+```
+eval "$(focus shell-init)"  # bash/zsh
+focus shell-init | source   # fish
+
+focus new my-task
+  → creates branch & workspace
+  → shell function auto-cd into workspace on success
+
+focus switch 2026-05-03-2125__my-task
+  → switches branch
+  → shell function auto-cd into workspace on success
 ```
 
 ---

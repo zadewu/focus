@@ -24,7 +24,7 @@ Knowledge workers juggle multiple parallel tasks (debugging, planning, feature w
 | `focus list` | View all active and archived sessions |
 | `focus archive <name>` | Retire session (workspace preserved for later retrieval) |
 | `focus export --obsidian` | Push notes + workspace files to Obsidian vault + daily journal |
-| Shell integration (`fcd`) | Quick `cd` into workspace directory |
+| `focus shell-init` | Generate shell integration script for auto-cd on new/switch |
 | Config persistence | Store vault path, workspace root via git config |
 
 ## Non-Goals
@@ -50,24 +50,28 @@ Knowledge workers juggle multiple parallel tasks (debugging, planning, feature w
 - Anyone using Obsidian as personal knowledge base
 - Teams wanting session-level metadata without git pollution
 
-## Implementation Complexity
+## Implementation Status
 
-**Estimated effort:** 3–4 weeks, 1 full-time developer
-- Core (new/switch/note/list/archive/log): 1 week
-- Export to markdown: 3 days
-- Obsidian vault integration: 5 days
-- Polish + testing: 3 days
+**MVP shipped:** 2026-05-03
+- All 10 commands fully implemented and tested
+- Hexagonal architecture with zero domain dependencies
+- Git-backed session metadata via local `~/.focus/` repository
+- Timestamped branch names (`YYYY-MM-DD-HHmm__name`) + workspace directories
+- Short-name resolution for all commands (switch/archive/workspace/log accept both full and short names)
+- Shell integration (`focus shell-init`) for auto-cd on new/switch
+- Markdown and Obsidian vault export with journal integration
+- Ready for production use: `go install github.com/zadewu/focus@latest`
 
 ## Dependencies
 
 - **Go 1.22+** (language runtime)
-- **cobra** (CLI framework, imported)
-- **lipgloss** (terminal styling, imported)
-- **git** (binary, assumed present)
+- **github.com/spf13/cobra** (CLI framework)
+- **github.com/charmbracelet/lipgloss** (terminal styling)
+- **git** (system binary, assumed present)
 - **$EDITOR** (optional, for note composition)
 
 ---
 
-**Version:** 1.0 (design phase)  
+**Version:** 1.0 (implementation complete)  
 **Last updated:** 2026-05-03  
 **Module:** `github.com/zadewu/focus`
