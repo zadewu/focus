@@ -45,6 +45,7 @@ focus archive my-task      # archive when done
 | `focus config <key> [value]` | Get/set config |
 | `focus export [name]` | Export to markdown |
 | `focus export [name] --obsidian` | Export to Obsidian vault |
+| `focus import [--dry-run]` | Migrate legacy sessions to canonical format |
 | `focus remote [url]` | Get or set backup remote URL |
 | `focus push` | Push all sessions to remote |
 | `focus pull [--restore]` | Fetch sessions from remote |
@@ -70,6 +71,31 @@ focus pull --restore
 
 `focus pull` without `--restore` fetches remote state (updates remote-tracking refs).
 `focus pull --restore` also creates a local branch for every remote branch — use this after migrating to a new machine.
+
+## Migration: Upgrading from Legacy Sessions
+
+If you have old sessions created with earlier versions of `focus`, their names may use legacy formats (e.g., `YYYY-MM-DD--name` or `plain-name`). The new canonical format is `YYYY-MM-DD-HHmm__name`.
+
+**Migrate all sessions:**
+
+```bash
+# Preview changes without modifying anything
+focus import --dry-run
+
+# Apply the migration (renames branches + workspace directories)
+focus import
+```
+
+The `import` command runs two passes:
+1. Renames legacy git branches in `~/.focus/`
+2. Renames legacy workspace directories in `~/focus-workspaces/` and creates missing branches
+
+Name conversion:
+- `YYYY-MM-DD--my-task` → `YYYY-MM-DD-0000__my-task` (HHmm defaults to 0000)
+- `plain-name` → `2000-01-01-0000__plain-name` (plain names get sentinel date)
+- `YYYY-MM-DD-HHmm__my-task` → unchanged (already canonical)
+
+After migration, `focus list` will display all sessions, and `focus switch my-task` will work with both full and short names.
 
 ## Shell Integration
 

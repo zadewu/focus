@@ -27,6 +27,7 @@ focus/
 │   ├── workspace.go                           # focus workspace [name]
 │   ├── config.go                              # focus config <key> <value>
 │   ├── export.go                              # focus export [--obsidian]
+│   ├── import.go                              # focus import [--dry-run]
 │   ├── remote.go                              # focus remote [url]
 │   ├── push.go                                # focus push
 │   ├── pull.go                                # focus pull [--restore]
@@ -78,6 +79,8 @@ type FocusRepository interface {
     PushAll(remote string) error
     FetchAll(remote string) error
     CheckoutRemoteBranches(remote string) error
+    CreateBranch(name string) error
+    RenameBranch(oldName, newName string) error
 }
 
 type ConfigStore interface {
@@ -109,6 +112,7 @@ Accepts port interfaces via constructor injection:
 - `RemoteSet(url)` — set origin URL
 - `Push()` — push all branches + tags to origin
 - `Pull(restore)` — fetch from origin; create local tracking branches if restore=true
+- `ImportFocuses(dryRun)` — migrate legacy focus sessions to canonical name format (two-pass: branches, then workspace dirs)
 
 ---
 
@@ -158,8 +162,12 @@ service   := domain.NewFocusService(repo, cfg, ws)
 ## Implementation Status
 
 All source files implemented and tested:
-- **cmd/**: 13 command handlers (new, switch, list, archive, note, log, workspace, config, export, shell-init, remote, push, pull)
+- **cmd/**: 14 command handlers (new, switch, list, archive, note, log, workspace, config, export, import, shell-init, remote, push, pull)
 - **domain/**: focus.go, service.go, ports.go fully implemented
+  - `isCurrentPrefixed()` — detect canonical YYYY-MM-DD-HHmm__ prefix
+  - `ParseImportName()` — convert legacy names to canonical format
+  - `ImportFocuses()` — two-pass migration (branches, then workspace dirs)
 - **adapters/**: git, config, workspace, export (markdown + obsidian), and ui all functional
-- **Tests**: Comprehensive unit test coverage for domain logic + remote operations
+  - `CreateBranch()`, `RenameBranch()` added to git adapter
+- **Tests**: Comprehensive unit test coverage for domain logic + remote operations + import migration
 - **Deployment**: Ready for `go install github.com/zadewu/focus@latest`
