@@ -25,6 +25,11 @@ type File struct {
 	Content []byte
 }
 
+type SearchResult struct {
+	Focus Focus
+	Note  Note
+}
+
 func ValidateName(name string) error {
 	if name == "" {
 		return errors.New("name cannot be empty")

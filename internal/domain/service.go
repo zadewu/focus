@@ -1,9 +1,12 @@
 package domain
 
 import (
+	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -384,6 +387,127 @@ func (s *FocusService) ImportFocuses(dryRun bool) ([]ImportResult, error) {
 		}
 
 		results = append(results, res)
+	}
+	return results, nil
+}
+
+// SearchNotes searches notes across all active and archived sessions for keyword.
+func (s *FocusService) SearchNotes(keyword string) ([]SearchResult, error) {
+	if strings.TrimSpace(keyword) == "" {
+		return nil, fmt.Errorf("keyword cannot be empty")
+	}
+	focuses, err := s.repo.List()
+	if err != nil {
+		return nil, err
+	}
+
+	type indexed struct {
+		focusIdx int
+		note     Note
+	}
+	var all []indexed
+	for i, f := range focuses {
+		branch := f.Name
+		if f.Archived {
+			branch = "archive/" + f.Name
+		}
+		notes, err := s.repo.GetNotes(branch)
+		if err != nil {
+			continue
+		}
+		for _, n := range notes {
+			all = append(all, indexed{focusIdx: i, note: n})
+		}
+	}
+	if len(all) == 0 {
+		return nil, nil
+	}
+
+	messages := make([]string, len(all))
+	for i, a := range all {
+		messages[i] = a.note.Message
+	}
+	matched, err := filterNotes(messages, keyword)
+	if err != nil {
+		return nil, err
+	}
+
+	var results []SearchResult
+	for i, m := range matched {
+		if m {
+			results = append(results, SearchResult{
+				Focus: focuses[all[i].focusIdx],
+				Note:  all[i].note,
+			})
+		}
+	}
+	return results, nil
+}
+
+// filterNotes returns a bool slice: true if messages[i] matches keyword.
+// Uses rg if available, grep if available, falls back to strings.Contains.
+// Precondition: keyword must not be empty (caller's responsibility).
+func filterNotes(messages []string, keyword string) ([]bool, error) {
+	results := make([]bool, len(messages))
+
+	// Sanitize: strip embedded newlines so line-number mapping stays stable.
+	sanitized := make([]string, len(messages))
+	for i, m := range messages {
+		sanitized[i] = strings.ReplaceAll(m, "\n", " ")
+	}
+
+	goFilter := func() {
+		lower := strings.ToLower(keyword)
+		for i, m := range sanitized {
+			results[i] = strings.Contains(strings.ToLower(m), lower)
+		}
+	}
+
+	tool := ""
+	var toolArgs []string
+	if p, err := exec.LookPath("rg"); err == nil {
+		tool = p
+		toolArgs = []string{"--fixed-strings", "--ignore-case", "-n", keyword}
+	} else if p, err := exec.LookPath("grep"); err == nil {
+		tool = p
+		toolArgs = []string{"-n", "-i", "-F", keyword}
+	}
+
+	if tool == "" {
+		goFilter()
+		return results, nil
+	}
+
+	input := strings.Join(sanitized, "\n")
+	cmd := exec.Command(tool, toolArgs...)
+	cmd.Stdin = strings.NewReader(input)
+	out, err := cmd.Output()
+	if err != nil {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 {
+			return results, nil // exit 1 = no match
+		}
+		// tool failed for a real reason; fall back to Go filter
+		goFilter()
+		return results, nil
+	}
+
+	if len(out) == 0 {
+		return results, nil
+	}
+	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+		if line == "" {
+			continue
+		}
+		idx, _, ok := strings.Cut(line, ":")
+		if !ok {
+			continue
+		}
+		n, err := strconv.Atoi(strings.TrimSpace(idx))
+		if err != nil || n < 1 || n > len(messages) {
+			continue
+		}
+		results[n-1] = true
 	}
 	return results, nil
 }

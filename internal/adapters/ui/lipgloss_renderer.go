@@ -77,6 +77,24 @@ func PrintStatus(current, wsPath string, notes []domain.Note) {
 	}
 }
 
+// PrintSearchResults renders search matches with their focus context.
+func PrintSearchResults(keyword string, results []domain.SearchResult) {
+	fmt.Printf("Search results for %s:\n\n", HeaderStyle.Render(keyword))
+	for _, r := range results {
+		focusLabel := ActiveStyle.Render(domain.ExtractShortName(r.Focus.Name))
+		if r.Focus.Archived {
+			focusLabel = ArchivedStyle.Render(domain.ExtractShortName(r.Focus.Name)) +
+				DimStyle.Render(" (archived)")
+		}
+		ts := FormatDate(r.Note.Timestamp)
+		fmt.Printf("  %s  %s  %s\n",
+			focusLabel,
+			TimestampStyle.Render(ts),
+			NoteStyle.Render(r.Note.Message),
+		)
+	}
+}
+
 // FormatTimestamp returns "HH:MM" for inline note display.
 func FormatTimestamp(t time.Time) string {
 	if t.IsZero() {
